@@ -38,3 +38,14 @@ This setup ensures a **secure AWS Organization** by implementing **centralized l
 - **Email & SMS alerts for high-severity findings**.  
 
 ---
+
+## **Prerequisites**
+- Node.js installed
+
+- AWS CDK installed (npm install -g aws-cdk)
+
+- IAM permissions to manage AWS Organizations and other AWS services
+
+- Bootstrapped AWS CDK (cdk bootstrap)
+
+---
