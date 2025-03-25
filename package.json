@@ -2,13 +2,23 @@
   "name": "aws-synapsed-bootstrap",
   "version": "0.1.0",
   "bin": {
-    "aws-synapsed-bootstrap": "bin/aws-synapsed-bootstrap.js"
+    "multi-account-bootstrap": "bin/multi-account-bootstrap.js"
   },
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "bootstrap": "ts-node scripts/create-organization.ts && ts-node scripts/create-account.ts",
+    "deploy": "cdk deploy --all --require-approval never",
+    "deploy:security": "cdk deploy --require-approval never $(cdk list | grep SecurityStack)",
+    "deploy:logging": "cdk deploy --require-approval never $(cdk list | grep LoggingStack)",
+    "deploy:monitoring": "cdk deploy --require-approval never $(cdk list | grep SecurityMonitoringStack)",
+    "deploy:compliance": "cdk deploy --require-approval never $(cdk list | grep ComplianceStack)",
+    "deploy:incident": "cdk deploy --require-approval never $(cdk list | grep IncidentResponseStack)",
+    "deploy:alerting": "cdk deploy --require-approval never $(cdk list | grep AlertingStack)",
+    "list": "cdk list",
+    "synth": "cdk synth"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
@@ -20,6 +30,7 @@
     "typescript": "~5.6.3"
   },
   "dependencies": {
+    "@aws-sdk/client-organizations": "^3.772.0",
     "aws-cdk-lib": "2.181.1",
     "constructs": "^10.0.0",
     "dotenv": "^16.4.7",

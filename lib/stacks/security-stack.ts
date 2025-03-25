@@ -6,24 +6,23 @@ export class SecurityStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Security Audit Role - use the current account ID
+    // Security Audit Role with OU-aware permissions
     const securityAuditRole = new iam.Role(this, 'SecurityAuditRole', {
-      assumedBy: new iam.AccountPrincipal(this.account),
-      description: 'Role that allows Security Account to audit other accounts',
+      assumedBy: new iam.OrganizationPrincipal(process.env.AWS_ORG_ID!),
+      description: 'Role that allows Security Account to audit across OUs',
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('SecurityAudit'),
         iam.ManagedPolicy.fromAwsManagedPolicyName('AWSConfigUserAccess'),
       ],
     });
 
-    // Logging Read Role - use the current account ID
+    // Logging Read Role with OU-aware permissions
     const loggingReadRole = new iam.Role(this, 'LoggingReadRole', {
-      assumedBy: new iam.AccountPrincipal(this.account),
-      description: 'Role that grants Logging Account access to S3 logs',
+      assumedBy: new iam.OrganizationPrincipal(process.env.AWS_ORG_ID!),
+      description: 'Role that grants Logging Account access across OUs',
     });
 
-    // Using specific permissions instead of AmazonS3ReadOnlyAccess for better security
-    // This follows the principle of least privilege by limiting access to only logging buckets
+    // Add bucket permissions with OU conditions
     loggingReadRole.addToPolicy(new iam.PolicyStatement({
       sid: 'AllowLoggingBucketRead',
       effect: iam.Effect.ALLOW,
@@ -37,9 +36,14 @@ export class SecurityStack extends cdk.Stack {
         'arn:aws:s3:::*-logs',
         'arn:aws:s3:::*-logs/*',
       ],
+      conditions: {
+        'StringEquals': {
+          'aws:PrincipalOrgID': process.env.AWS_ORG_ID
+        }
+      }
     }));
-    
-    // Add additional permissions for CloudWatch Logs if needed
+
+    // Add CloudWatch Logs permissions with OU conditions
     loggingReadRole.addToPolicy(new iam.PolicyStatement({
       sid: 'AllowCloudWatchLogsRead',
       effect: iam.Effect.ALLOW,
@@ -48,7 +52,12 @@ export class SecurityStack extends cdk.Stack {
         'logs:DescribeLogStreams',
         'logs:GetLogEvents'
       ],
-      resources: ['*']  // Scope this further if needed
+      resources: ['*'],
+      conditions: {
+        'StringEquals': {
+          'aws:PrincipalOrgID': process.env.AWS_ORG_ID
+        }
+      }
     }));
   }
 }
