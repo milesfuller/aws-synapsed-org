@@ -1,5 +1,7 @@
 # Multi-Account AWS Bootstrap Framework
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 A comprehensive Infrastructure as Code (IaC) solution for establishing secure, scalable AWS Organizations with centralized logging and governance. Originally developed for SynapseD, this framework is designed to be reusable for any organization requiring robust AWS account management.
 
 ## Original Use Case: SynapseD
@@ -298,7 +300,7 @@ Create an issue for:
 
 ## License
 
-AGPL-3.0 License - See LICENSE file
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
