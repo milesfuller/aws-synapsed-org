@@ -98,6 +98,7 @@ npm install
    ```plaintext
    CDK_DEFAULT_ACCOUNT=<root-account-id>    # Your AWS root account ID
    CDK_DEFAULT_REGION=<preferred-region>    # e.g., ap-southeast-2
+   SECURITY_TEAM_EMAIL=<email>              # Security team notification email
    ```
 
 2. **Automatically Updated by Scripts**
@@ -113,6 +114,7 @@ npm install
    ```plaintext
    STACK_PREFIX=         # Default: "Security"
    ENV_NAME=            # Default: "Dev"
+   SECURITY_TEAM_PHONE=  # Phone number for SMS alerts (with country code)
    ```
 
 ### Bootstrap Process

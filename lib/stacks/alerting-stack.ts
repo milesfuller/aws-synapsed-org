@@ -4,25 +4,32 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
+import { get } from "env-var";
 
 export class AlertingStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    // Get alert destinations from environment variables
+    const securityTeamEmail = get('SECURITY_TEAM_EMAIL').required().asString();
+    const securityTeamPhone = get('SECURITY_TEAM_PHONE').default('').asString();
 
     // SNS Topic for security alerts
     const securityAlertsTopic = new sns.Topic(this, 'SecurityAlertsTopic', {
       displayName: 'Security Alerts',
     });
 
-    // Add email subscription - replace with your team's email
+    // Add email subscription
     securityAlertsTopic.addSubscription(
-      new subscriptions.EmailSubscription('security-team@example.com')
+      new subscriptions.EmailSubscription(securityTeamEmail)
     );
     
-    // Optional: Add SMS subscription - replace with your team's phone number
-    // securityAlertsTopic.addSubscription(
-    //   new subscriptions.SmsSubscription('+1234567890')
-    // );
+    // Add SMS subscription if phone number is provided
+    if (securityTeamPhone) {
+      securityAlertsTopic.addSubscription(
+        new subscriptions.SmsSubscription(securityTeamPhone)
+      );
+    }
 
     // Rule to send high-severity findings to SNS
     const highSeverityFindingsRule = new events.Rule(this, 'HighSeverityFindingsRule', {
