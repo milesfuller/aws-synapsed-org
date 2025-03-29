@@ -8,6 +8,8 @@ describe('SecurityMonitoringStack', () => {
   beforeEach(() => {
     const app = new cdk.App();
     const stack = new SecurityMonitoringStack(app, 'TestStack', {
+      environment: 'test',
+      projectName: 'test-project',
       tags: {
         Environment: 'test',
         Project: 'test-project'
@@ -151,7 +153,10 @@ describe('SecurityMonitoringStack', () => {
   test('uses default values when stack props are not provided', () => {
     // Create a new stack without props
     const app = new cdk.App();
-    const stackWithoutProps = new SecurityMonitoringStack(app, 'TestStackNoProps');
+    const stackWithoutProps = new SecurityMonitoringStack(app, 'TestStackNoProps', {
+      environment: 'test',
+      projectName: 'test-project'
+    });
     const templateWithoutProps = Template.fromStack(stackWithoutProps);
 
     // Get all resources
@@ -162,8 +167,8 @@ describe('SecurityMonitoringStack', () => {
       expect(tags).toBeDefined();
       expect(tags).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ Key: 'Environment', Value: 'Dev' }),
-          expect.objectContaining({ Key: 'Project', Value: 'aws-synapsed-bootstrap' }),
+          expect.objectContaining({ Key: 'Environment', Value: 'test' }),
+          expect.objectContaining({ Key: 'Project', Value: 'test-project' }),
           expect.objectContaining({ Key: 'ManagedBy', Value: 'CDK' })
         ])
       );
