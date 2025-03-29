@@ -32,6 +32,18 @@ graph TD
     Prod --> ProdAccount[Prod Account]
 ```
 
+## Stack Dependencies
+
+```mermaid
+graph TD
+    Config[Config Management] --> Security[Security Stack]
+    Security --> Logging[Logging Stack]
+    Logging --> Monitoring[Security Monitoring]
+    Monitoring --> Compliance[Compliance Stack]
+    Compliance --> Incident[Incident Response]
+    Incident --> Alerting[Alerting Stack]
+```
+
 ## Implementation Components
 
 ### 1. Configuration Management
@@ -39,21 +51,29 @@ graph TD
 - **Secrets Manager**: Secure secrets management
 - **AppConfig**: Feature flags and dynamic configuration
 - **KMS**: Optional encryption for sensitive data
+- **Environment Configuration**: Type-safe environment variable handling with validation
 
 ### 2. AWS Organizations & IAM Roles
 - **Security Audit Role**: Cross-account security auditing
+  - Organization-wide access
+  - SecurityAudit and AWSConfigUserAccess policies
+  - OU-aware permissions
 - **Logging Read Role**: Centralized logging access
-- **Cross-OU Permissions**: Organization-wide security policies
+  - S3 bucket read permissions
+  - CloudWatch Logs access
+  - Organization-wide scope
 
 ### 3. Centralized Security Monitoring
 - **GuardDuty**: Threat detection across accounts
   - S3 Logs monitoring
   - Kubernetes audit logs
   - Malware protection
+  - Finding publishing frequency: 15 minutes
 - **Security Hub**: Security finding aggregation
   - AWS Foundational Security Best Practices
   - CIS AWS Foundations Benchmark
   - PCI DSS compliance checks
+  - Custom severity thresholds
 - **Cross-Account Visibility**: Unified security dashboard
 
 ### 4. Compliance Enforcement
@@ -69,9 +89,10 @@ graph TD
 - **Lambda Functions**:
   - Suspicious Activity Handler
   - Security Finding Processor
+  - Configurable severity thresholds
 - **EventBridge Rules**:
   - Real-time incident detection
-  - Configurable severity thresholds
+  - Security Hub finding processing
   - Automated responses
 
 ### 6. Security Alerting
@@ -80,9 +101,10 @@ graph TD
   - Compliance Violations
   - Audit Events
 - **Multiple Notification Methods**:
-  - Email notifications
-  - Optional SMS alerts
+  - Email notifications (required)
+  - SMS alerts (optional)
   - Configurable severity thresholds
+  - High severity threshold customization
 
 ## Prerequisites
 
@@ -126,10 +148,70 @@ npm install
    STACK_PREFIX="Security"                  # Prefix for all stack names
    ENV_NAME="Dev"                          # Environment name (Dev, Prod, etc.)
    PROJECT_NAME="aws-synapsed-bootstrap"    # Project identifier
-   SECURITY_TEAM_PHONE="+1234567890"       # Phone number for SMS alerts (optional)
-   HIGH_SEVERITY_THRESHOLD="7"             # Threshold for high severity alerts (default: 7)
+   SECURITY_TEAM_PHONE="+1234567890"       # Phone number for SMS alerts
+   HIGH_SEVERITY_THRESHOLD="7"             # Threshold for high severity alerts
+   AWS_ORG_ID="o-xxxxxxxxxx"              # AWS Organizations ID
    ```
 
 ### Stack Configuration
 
-Each stack extends the `
+Each stack extends the `BaseStack` class and implements specific security and compliance requirements. The stacks are deployed in a specific order to ensure proper dependency management:
+
+1. **Config Management Stack**
+   - First to deploy
+   - Sets up central configuration
+   - No dependencies
+
+2. **Security Stack**
+   - Depends on Config Management
+   - Sets up IAM roles and permissions
+   - Organization-wide scope
+
+3. **Logging Stack**
+   - Depends on Security Stack
+   - Centralized logging infrastructure
+   - S3 and CloudWatch Logs setup
+
+4. **Security Monitoring Stack**
+   - Depends on Logging Stack
+   - GuardDuty and Security Hub setup
+   - Cross-account monitoring
+
+5. **Compliance Stack**
+   - Depends on Security Monitoring
+   - AWS Config rules
+   - Compliance enforcement
+
+6. **Incident Response Stack**
+   - Depends on Compliance Stack
+   - Automated response setup
+   - EventBridge rules
+
+7. **Alerting Stack**
+   - Depends on Incident Response
+   - SNS topics and subscriptions
+   - Notification configuration
+
+## Development
+
+### Testing
+```bash
+npm test
+```
+
+### Deployment
+```bash
+cdk deploy --all
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
