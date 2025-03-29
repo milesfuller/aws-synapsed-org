@@ -6,6 +6,7 @@ import { ComplianceStack } from '../lib/stacks/compliance-stack';
 import { IncidentResponseStack } from '../lib/stacks/incident-response-stack';
 import { AlertingStack } from '../lib/stacks/alerting-stack';
 import { SecurityMonitoringStack } from '../lib/stacks/security-monitoring-stack';
+import { ConfigManagementStack } from '../lib/stacks/config-management-stack';
 import { get } from "env-var";
 
 /**
@@ -13,12 +14,13 @@ import { get } from "env-var";
  * 
  * This is the main entry point for deploying a secure multi-account AWS organization.
  * Stack deployment order is important for dependency management:
- * 1. Security (IAM roles and permissions)
- * 2. Logging (Centralized logging infrastructure)
- * 3. Security Monitoring (GuardDuty and Security Hub)
- * 4. Compliance (AWS Config rules)
- * 5. Incident Response (Automated responses)
- * 6. Alerting (SNS notifications)
+ * 1. Config Management (Parameter Store, Secrets Manager, AppConfig)
+ * 2. Security (IAM roles and permissions)
+ * 3. Logging (Centralized logging infrastructure)
+ * 4. Security Monitoring (GuardDuty and Security Hub)
+ * 5. Compliance (AWS Config rules)
+ * 6. Incident Response (Automated responses)
+ * 7. Alerting (SNS notifications)
  */
 
 // Load environment variables
@@ -31,6 +33,7 @@ const CDK_DEFAULT_REGION = get("CDK_DEFAULT_REGION").required().asString();
 // Optional environment variables with defaults
 const STACK_PREFIX = get("STACK_PREFIX").default("Security").asString();
 const ENV_NAME = get("ENV_NAME").default("Dev").asString();
+const PROJECT_NAME = get("PROJECT_NAME").default("aws-synapsed-bootstrap").asString();
 
 // Initialize CDK app
 const app = new cdk.App();
@@ -48,7 +51,15 @@ const stackProps = {
   }
 };
 
-// Deploy stacks in dependency order
+// Deploy Config Management Stack first
+const configStack = new ConfigManagementStack(app, `${STACK_PREFIX}ConfigStack`, {
+  description: 'Configuration management with Parameter Store, Secrets Manager, and AppConfig',
+  environment: ENV_NAME,
+  projectName: PROJECT_NAME,
+  ...stackProps
+});
+
+// Deploy remaining stacks in dependency order
 const securityStack = new SecurityStack(app, `${STACK_PREFIX}SecurityStack`, {
   description: 'IAM roles for centralized security & logging',
   ...stackProps
@@ -80,6 +91,7 @@ const alertingStack = new AlertingStack(app, `${STACK_PREFIX}AlertingStack`, {
 });
 
 // Add explicit dependencies
+securityStack.addDependency(configStack);
 loggingStack.addDependency(securityStack);
 securityMonitoringStack.addDependency(loggingStack);
 complianceStack.addDependency(securityMonitoringStack);
