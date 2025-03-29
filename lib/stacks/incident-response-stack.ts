@@ -4,13 +4,24 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { BaseStack, BaseStackProps } from '../interfaces/base-stack';
 
-export class IncidentResponseStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+export interface IncidentResponseStackProps extends BaseStackProps {
+  severityThreshold?: number;
+  enableAutomaticUserDisable?: boolean;
+}
+
+export class IncidentResponseStack extends BaseStack {
+  public readonly incidentResponseFunction: lambda.Function;
+  public readonly suspiciousActivityRule: events.Rule;
+  public readonly securityHubRule: events.Rule;
+
+  constructor(scope: cdk.App, id: string, props: IncidentResponseStackProps) {
     super(scope, id, props);
 
     // Lambda for automatic security responses
-    const incidentResponseFunction = new lambda.Function(this, 'IncidentResponseFunction', {
+    this.incidentResponseFunction = new lambda.Function(this, 'IncidentResponseFunction', {
+      functionName: this.createResourceName('incident-response'),
       runtime: lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
       code: lambda.Code.fromInline(`
@@ -28,7 +39,7 @@ export class IncidentResponseStack extends cdk.Stack {
     });
 
     // Grant the lambda permission to disable IAM users
-    incidentResponseFunction.addToRolePolicy(new iam.PolicyStatement({
+    this.incidentResponseFunction.addToRolePolicy(new iam.PolicyStatement({
       actions: [
         'iam:GetUser',
         'iam:UpdateUser',
@@ -41,22 +52,22 @@ export class IncidentResponseStack extends cdk.Stack {
     }));
 
     // EventBridge rule for suspicious activity
-    const suspiciousActivityRule = new events.Rule(this, 'SuspiciousActivityRule', {
+    this.suspiciousActivityRule = new events.Rule(this, 'SuspiciousActivityRule', {
       description: 'Detects suspicious IAM user activity',
       eventPattern: {
         source: ['aws.guardduty'],
         detailType: ['GuardDuty Finding'],
         detail: {
           type: ['UnauthorizedAccess:IAMUser'],
-          severity: [{ numeric: ['>', 7] }], // High severity
+          severity: [{ numeric: ['>', props.severityThreshold || 7] }], // High severity
         },
       },
     });
 
-    suspiciousActivityRule.addTarget(new targets.LambdaFunction(incidentResponseFunction));
+    this.suspiciousActivityRule.addTarget(new targets.LambdaFunction(this.incidentResponseFunction));
 
     // Integration with Security Hub
-    const securityHubRule = new events.Rule(this, 'SecurityHubFindingsRule', {
+    this.securityHubRule = new events.Rule(this, 'SecurityHubFindingsRule', {
       description: 'Processes critical Security Hub findings',
       eventPattern: {
         source: ['aws.securityhub'],
@@ -74,6 +85,13 @@ export class IncidentResponseStack extends cdk.Stack {
       },
     });
 
-    securityHubRule.addTarget(new targets.LambdaFunction(incidentResponseFunction));
+    this.securityHubRule.addTarget(new targets.LambdaFunction(this.incidentResponseFunction));
+
+    // Create outputs
+    new cdk.CfnOutput(this, 'IncidentResponseFunctionArn', {
+      value: this.incidentResponseFunction.functionArn,
+      description: 'Incident Response Lambda Function ARN',
+      exportName: 'IncidentResponseFunctionArn'
+    });
   }
 }

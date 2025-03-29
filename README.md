@@ -34,36 +34,55 @@ graph TD
 
 ## Implementation Components
 
-### 1. AWS Organizations & IAM Roles
+### 1. Configuration Management
+- **Parameter Store**: Central configuration storage
+- **Secrets Manager**: Secure secrets management
+- **AppConfig**: Feature flags and dynamic configuration
+- **KMS**: Optional encryption for sensitive data
+
+### 2. AWS Organizations & IAM Roles
 - **Security Audit Role**: Cross-account security auditing
 - **Logging Read Role**: Centralized logging access
 - **Cross-OU Permissions**: Organization-wide security policies
 
-### 2. Centralized Security Monitoring
+### 3. Centralized Security Monitoring
 - **GuardDuty**: Threat detection across accounts
+  - S3 Logs monitoring
+  - Kubernetes audit logs
+  - Malware protection
 - **Security Hub**: Security finding aggregation
+  - AWS Foundational Security Best Practices
+  - CIS AWS Foundations Benchmark
+  - PCI DSS compliance checks
 - **Cross-Account Visibility**: Unified security dashboard
 
-### 3. Compliance Enforcement
+### 4. Compliance Enforcement
 - **AWS Config Rules**:
   - S3 Bucket Encryption
   - Root User Activity Monitoring
   - MFA Enforcement
   - Custom Compliance Rules
+- **Delivery Channel**: Configurable snapshot frequency
+- **Global Resource Types**: Optional inclusion in recording
 
-### 4. Automated Incident Response
+### 5. Automated Incident Response
 - **Lambda Functions**:
   - Suspicious Activity Handler
   - Security Finding Processor
 - **EventBridge Rules**:
   - Real-time incident detection
+  - Configurable severity thresholds
   - Automated responses
 
-### 5. Security Alerting
+### 6. Security Alerting
 - **SNS Topics**:
   - Critical Security Alerts
   - Compliance Violations
   - Audit Events
+- **Multiple Notification Methods**:
+  - Email notifications
+  - Optional SMS alerts
+  - Configurable severity thresholds
 
 ## Prerequisites
 
@@ -95,215 +114,22 @@ npm install
 
 ### Environment Variables
 
-1. **Required Before Running Scripts**
-   Create a `.env` file with these mandatory variables:
+1. **Required Environment Variables**
    ```plaintext
    CDK_DEFAULT_ACCOUNT=<root-account-id>    # Your AWS root account ID
    CDK_DEFAULT_REGION=<preferred-region>    # e.g., ap-southeast-2
-   SECURITY_TEAM_EMAIL=<email>              # Security team notification email
+   SECURITY_TEAM_EMAIL=<email>              # Email for security alerts
    ```
 
-2. **Automatically Updated by Scripts**
-   The following variables will be populated by `npm run bootstrap`:
+2. **Optional Environment Variables**
    ```plaintext
-   AWS_ORG_ID=           # Generated when creating organization
-   SECURITY_OU_ID=       # Generated when creating Security OU
-   WORKLOADS_OU_ID=      # Generated when creating Workloads OU
+   STACK_PREFIX="Security"                  # Prefix for all stack names
+   ENV_NAME="Dev"                          # Environment name (Dev, Prod, etc.)
+   PROJECT_NAME="aws-synapsed-bootstrap"    # Project identifier
+   SECURITY_TEAM_PHONE="+1234567890"       # Phone number for SMS alerts (optional)
+   HIGH_SEVERITY_THRESHOLD="7"             # Threshold for high severity alerts (default: 7)
    ```
 
-3. **Optional Variables**
-   Customize your deployment with these settings:
-   ```plaintext
-   STACK_PREFIX=         # Default: "Security"
-   ENV_NAME=            # Default: "Dev"
-   SECURITY_TEAM_PHONE=  # Phone number for SMS alerts (with country code)
-   ```
+### Stack Configuration
 
-### Bootstrap Process
-
-1. **Organization Setup**
-   ```bash
-   npm run bootstrap
-   ```
-   This command will:
-   - Create AWS Organization (if none exists)
-   - Set up Security and Workloads OUs
-   - Update `.env` with generated IDs
-   - Create required accounts
-
-2. **CDK Bootstrap**
-   ```bash
-   cdk bootstrap aws://<account-id>/<region>
-   ```
-   Required for each deployment account
-
-### Side Effects
-
-Running the bootstrap process will:
-
-- **AWS Organization**
-  - Create new organization if none exists
-  - Set up organizational units
-  - Configure organization defaults
-
-- **Local Environment**
-  - Update `.env` file with new IDs
-  - Create service-linked roles
-
-- **Account Structure**
-  - Create security and workload accounts
-  - Configure cross-account access
-
-### Order of Operations
-
-1. Set required environment variables
-   ```bash
-   # Edit .env file with your account details
-   notepad .env
-   ```
-
-2. Run bootstrap command
-   ```bash
-   npm run bootstrap
-   ```
-
-3. Verify environment setup
-   ```bash
-   # Check .env was updated
-   type .env
-   ```
-
-4. Bootstrap CDK in accounts
-   ```bash
-   # Root account
-   cdk bootstrap aws://<root-account>/<region>
-   
-   # Each member account
-   cdk bootstrap aws://<member-account>/<region>
-   ```
-
-5. Deploy stacks
-   ```bash
-   npm run deploy
-   ```
-
-### Troubleshooting
-
-If bootstrap fails to update `.env`:
-
-1. Check AWS credentials
-   ```bash
-   aws sts get-caller-identity
-   ```
-
-2. Verify Organizations access
-   ```bash
-   aws organizations describe-organization
-   ```
-
-3. Run bootstrap with verbose logging
-   ```bash
-   npm run bootstrap -- --verbose
-   ```
-
-## Deployment
-
-### Sequential Stack Deployment
-```bash
-npm run deploy:security    # Deploy Security Stack
-npm run deploy:logging    # Deploy Logging Stack
-npm run deploy:monitoring # Deploy Security Monitoring
-npm run deploy:compliance # Deploy Compliance Rules
-npm run deploy:incident   # Deploy Incident Response
-npm run deploy:alerting   # Deploy Alerting
-```
-
-### Full Deployment
-```bash
-npm run deploy
-```
-
-## Development Commands
-
-```bash
-npm run build   # Compile TypeScript
-npm run watch   # Watch mode
-npm run test    # Run tests
-npm run synth   # Generate CloudFormation
-npm run list    # List all stacks
-```
-
-## Stack Dependencies
-
-```mermaid
-graph TD
-    A[Security Stack] --> B[Logging Stack]
-    B --> C[Security Monitoring Stack]
-    C --> D[Compliance Stack]
-    D --> E[Incident Response Stack]
-    E --> F[Alerting Stack]
-```
-
-## Customization
-
-### 1. Stack Modification
-Each stack can be customized in `lib/stacks/`:
-- `security-stack.ts`
-- `logging-stack.ts`
-- `security-monitoring-stack.ts`
-- `compliance-stack.ts`
-- `incident-response-stack.ts`
-- `alerting-stack.ts`
-
-### 2. Adding New Stacks
-1. Create new stack in `lib/stacks/`
-2. Import in `bin/multi-account-bootstrap.ts`
-3. Add deployment script in `package.json`
-
-## Why Not AWS Control Tower?
-
-This framework provides a lightweight alternative to Control Tower:
-- **Simplified Management**: Less overhead for small to medium organizations
-- **Custom Control**: Direct modification of security controls
-- **Cost Effective**: No additional AWS charges
-- **Migration Path**: Can transition to Control Tower if needed
-
-## Benefits for Other Organizations
-
-1. **Scalability**
-   - Start small, scale as needed
-   - No restructuring required
-   - Modular stack design
-
-2. **Security**
-   - Defense in depth
-   - Automated responses
-   - Compliance ready
-
-3. **Cost Management**
-   - Account separation
-   - Resource isolation
-   - Clear cost attribution
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
-
-## Support
-
-Create an issue for:
-- Bug reports
-- Feature requests
-- Implementation questions
-
-## License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- AWS CDK team
-- AWS Organizations best practices
-- Security compliance frameworks
+Each stack extends the `

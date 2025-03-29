@@ -7,7 +7,7 @@ import { IncidentResponseStack } from '../lib/stacks/incident-response-stack';
 import { AlertingStack } from '../lib/stacks/alerting-stack';
 import { SecurityMonitoringStack } from '../lib/stacks/security-monitoring-stack';
 import { ConfigManagementStack } from '../lib/stacks/config-management-stack';
-import { get } from "env-var";
+import { getEnvironmentConfig } from '../lib/config/environment';
 
 /**
  * Multi-Account AWS Bootstrap
@@ -26,67 +26,64 @@ import { get } from "env-var";
 // Load environment variables
 dotenv.config();
 
-// Required environment variables
-const CDK_DEFAULT_ACCOUNT = get("CDK_DEFAULT_ACCOUNT").required().asString();
-const CDK_DEFAULT_REGION = get("CDK_DEFAULT_REGION").required().asString();
-
-// Optional environment variables with defaults
-const STACK_PREFIX = get("STACK_PREFIX").default("Security").asString();
-const ENV_NAME = get("ENV_NAME").default("Dev").asString();
-const PROJECT_NAME = get("PROJECT_NAME").default("aws-synapsed-bootstrap").asString();
+// Get validated environment configuration
+const env = getEnvironmentConfig();
 
 // Initialize CDK app
 const app = new cdk.App();
 
 // Common stack properties
 const stackProps = {
-  env: { 
-    account: CDK_DEFAULT_ACCOUNT,
-    region: CDK_DEFAULT_REGION 
+  env: {
+    account: env.cdkDefaultAccount,
+    region: env.cdkDefaultRegion
   },
   tags: {
-    Environment: ENV_NAME,
-    Framework: 'Multi-Account-Bootstrap',
-    DeployedBy: 'CDK'
-  }
+    Environment: env.envName,
+    Framework: "CDK",
+    DeployedBy: "aws-synapsed-bootstrap"
+  },
+  environment: env.envName,
+  projectName: env.projectName
 };
 
 // Deploy Config Management Stack first
-const configStack = new ConfigManagementStack(app, `${STACK_PREFIX}ConfigStack`, {
+const configStack = new ConfigManagementStack(app, `${env.stackPrefix}ConfigStack`, {
   description: 'Configuration management with Parameter Store, Secrets Manager, and AppConfig',
-  environment: ENV_NAME,
-  projectName: PROJECT_NAME,
   ...stackProps
 });
 
 // Deploy remaining stacks in dependency order
-const securityStack = new SecurityStack(app, `${STACK_PREFIX}SecurityStack`, {
+const securityStack = new SecurityStack(app, `${env.stackPrefix}SecurityStack`, {
   description: 'IAM roles for centralized security & logging',
   ...stackProps
 });
 
-const loggingStack = new LoggingStack(app, `${STACK_PREFIX}LoggingStack`, {
+const loggingStack = new LoggingStack(app, `${env.stackPrefix}LoggingStack`, {
   description: 'Centralized logging configuration',
   ...stackProps
 });
 
-const securityMonitoringStack = new SecurityMonitoringStack(app, `${STACK_PREFIX}SecurityMonitoringStack`, {
+const securityMonitoringStack = new SecurityMonitoringStack(app, `${env.stackPrefix}SecurityMonitoringStack`, {
   description: 'Centralized security monitoring with GuardDuty and Security Hub',
   ...stackProps
 });
 
-const complianceStack = new ComplianceStack(app, `${STACK_PREFIX}ComplianceStack`, {
+const complianceStack = new ComplianceStack(app, `${env.stackPrefix}ComplianceStack`, {
   description: 'AWS Config rules for compliance enforcement',
   ...stackProps
 });
 
-const incidentResponseStack = new IncidentResponseStack(app, `${STACK_PREFIX}IncidentResponseStack`, {
+const incidentResponseStack = new IncidentResponseStack(app, `${env.stackPrefix}IncidentResponseStack`, {
   description: 'Automated incident response with Lambda and EventBridge',
   ...stackProps
 });
 
-const alertingStack = new AlertingStack(app, `${STACK_PREFIX}AlertingStack`, {
+const alertingStack = new AlertingStack(app, `${env.stackPrefix}AlertingStack`, {
   description: 'Security alerts with Amazon SNS',
+  securityTeamEmail: env.securityTeamEmail,
+  securityTeamPhone: env.securityTeamPhone,
+  highSeverityThreshold: env.highSeverityThreshold,
   ...stackProps
 });
 
