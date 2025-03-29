@@ -25,22 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-<<<<<<< HEAD
                 <span class='fraction'>23/23</span>
-=======
-                <span class='fraction'>22/22</span>
->>>>>>> origin/main
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-<<<<<<< HEAD
                 <span class='fraction'>14/14</span>
-=======
-                <span class='fraction'>8/8</span>
->>>>>>> origin/main
             </div>
         
             
@@ -54,11 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-<<<<<<< HEAD
                 <span class='fraction'>23/23</span>
-=======
-                <span class='fraction'>22/22</span>
->>>>>>> origin/main
             </div>
         
             
@@ -172,7 +160,6 @@
 <a name='L95'></a><a href='#L95'>95</a>
 <a name='L96'></a><a href='#L96'>96</a>
 <a name='L97'></a><a href='#L97'>97</a>
-<<<<<<< HEAD
 <a name='L98'></a><a href='#L98'>98</a>
 <a name='L99'></a><a href='#L99'>99</a>
 <a name='L100'></a><a href='#L100'>100</a>
@@ -188,14 +175,10 @@
 <a name='L110'></a><a href='#L110'>110</a>
 <a name='L111'></a><a href='#L111'>111</a>
 <a name='L112'></a><a href='#L112'>112</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-=======
-<a name='L98'></a><a href='#L98'>98</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
->>>>>>> origin/main
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<<<<<<< HEAD
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -213,11 +196,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-=======
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
->>>>>>> origin/main
 <span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -312,7 +290,6 @@ import { Construct } from 'constructs';
 import * as guardduty from 'aws-cdk-lib/aws-guardduty';
 import * as securityhub from 'aws-cdk-lib/aws-securityhub';
 import * as iam from 'aws-cdk-lib/aws-iam';
-<<<<<<< HEAD
 import { BaseStack, BaseStackProps } from '../interfaces/base-stack';
 &nbsp;
 export interface SecurityMonitoringStackProps extends BaseStackProps {
@@ -338,40 +315,19 @@ export class SecurityMonitoringStack extends BaseStack {
       properties: {
         Enable: true,
         FindingPublishingFrequency: props.findingPublishingFrequency || 'FIFTEEN_MINUTES',
-=======
-&nbsp;
-export class SecurityMonitoringStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
-&nbsp;
-    // Enable GuardDuty
-    const detector = new cdk.CfnResource(this, 'GuardDutyDetector', {
-      type: 'AWS::GuardDuty::Detector',
-      properties: {
-        Enable: true,
-        FindingPublishingFrequency: 'FIFTEEN_MINUTES',
->>>>>>> origin/main
         DataSources: {
           S3Logs: {
             Enable: true
           },
           Kubernetes: {
             AuditLogs: {
-<<<<<<< HEAD
               Enable: props.enableKubernetesAudit ?? true
-=======
-              Enable: true
->>>>>>> origin/main
             }
           },
           MalwareProtection: {
             ScanEc2InstanceWithFindings: {
               EbsVolumes: {
-<<<<<<< HEAD
                 Enable: props.enableMalwareProtection ?? true
-=======
-                Enable: true
->>>>>>> origin/main
               }
             }
           }
@@ -380,26 +336,16 @@ export class SecurityMonitoringStack extends cdk.Stack {
     });
 &nbsp;
     // Add tags to GuardDuty detector
-<<<<<<< HEAD
     cdk.Tags.of(this.detector).add('Environment', props?.tags?.Environment || 'Dev');
     cdk.Tags.of(this.detector).add('Project', props?.tags?.Project || 'aws-synapsed-bootstrap');
     cdk.Tags.of(this.detector).add('ManagedBy', 'CDK');
 &nbsp;
     // Enable Security Hub
     this.hub = new securityhub.CfnHub(this, 'SecurityHub', {
-=======
-    cdk.Tags.of(detector).add('Environment', props?.tags?.Environment || 'Dev');
-    cdk.Tags.of(detector).add('Project', props?.tags?.Project || 'aws-synapsed-bootstrap');
-    cdk.Tags.of(detector).add('ManagedBy', 'CDK');
-&nbsp;
-    // Enable Security Hub
-    const hub = new securityhub.CfnHub(this, 'SecurityHub', {
->>>>>>> origin/main
       enableDefaultStandards: true
     });
 &nbsp;
     // Add tags to Security Hub
-<<<<<<< HEAD
     cdk.Tags.of(this.hub).add('Environment', props?.tags?.Environment || 'Dev');
     cdk.Tags.of(this.hub).add('Project', props?.tags?.Project || 'aws-synapsed-bootstrap');
     cdk.Tags.of(this.hub).add('ManagedBy', 'CDK');
@@ -410,18 +356,6 @@ export class SecurityMonitoringStack extends cdk.Stack {
     // Enable specific standards using Security Hub constructs
     // AWS Foundational Security Best Practices
     this.awsFsbp = new cdk.CfnResource(this, 'AwsFsbpStandard', {
-=======
-    cdk.Tags.of(hub).add('Environment', props?.tags?.Environment || 'Dev');
-    cdk.Tags.of(hub).add('Project', props?.tags?.Project || 'aws-synapsed-bootstrap');
-    cdk.Tags.of(hub).add('ManagedBy', 'CDK');
-&nbsp;
-    // Add explicit dependency
-    hub.addDependency(detector);
-&nbsp;
-    // Enable specific standards using Security Hub constructs
-    // AWS Foundational Security Best Practices
-    const awsFsbp = new cdk.CfnResource(this, 'AwsFsbpStandard', {
->>>>>>> origin/main
       type: 'AWS::SecurityHub::StandardsSubscription',
       properties: {
         StandardsArn: `arn:aws:securityhub:${this.region}::standards/aws-foundational-security-best-practices/v/1.0.0`
@@ -429,11 +363,7 @@ export class SecurityMonitoringStack extends cdk.Stack {
     });
 &nbsp;
     // CIS AWS Foundations Benchmark
-<<<<<<< HEAD
     this.cisBenchmark = new cdk.CfnResource(this, 'CisBenchmarkStandard', {
-=======
-    const cisBenchmark = new cdk.CfnResource(this, 'CisBenchmarkStandard', {
->>>>>>> origin/main
       type: 'AWS::SecurityHub::StandardsSubscription',
       properties: {
         StandardsArn: `arn:aws:securityhub:${this.region}::standards/cis-aws-foundations-benchmark/v/1.2.0`
@@ -441,11 +371,7 @@ export class SecurityMonitoringStack extends cdk.Stack {
     });
 &nbsp;
     // PCI DSS
-<<<<<<< HEAD
     this.pciDss = new cdk.CfnResource(this, 'PciDssStandard', {
-=======
-    const pciDss = new cdk.CfnResource(this, 'PciDssStandard', {
->>>>>>> origin/main
       type: 'AWS::SecurityHub::StandardsSubscription',
       properties: {
         StandardsArn: `arn:aws:securityhub:${this.region}::standards/pci-dss/v/3.2.1`
@@ -453,17 +379,12 @@ export class SecurityMonitoringStack extends cdk.Stack {
     });
 &nbsp;
     // Create IAM role for Security Hub service-linked role if it doesn't exist
-<<<<<<< HEAD
     this.securityHubServiceRole = new iam.CfnServiceLinkedRole(this, 'SecurityHubServiceLinkedRole', {
-=======
-    const securityHubServiceRole = new iam.CfnServiceLinkedRole(this, 'SecurityHubServiceLinkedRole', {
->>>>>>> origin/main
       awsServiceName: 'securityhub.amazonaws.com',
       description: 'Service-linked role for AWS Security Hub'
     });
 &nbsp;
     // Add dependencies
-<<<<<<< HEAD
     this.awsFsbp.node.addDependency(this.hub);
     this.cisBenchmark.node.addDependency(this.hub);
     this.pciDss.node.addDependency(this.hub);
@@ -471,15 +392,6 @@ export class SecurityMonitoringStack extends cdk.Stack {
     // Output the detector ID
     new cdk.CfnOutput(this, 'GuardDutyDetectorId', {
       value: this.detector.ref,
-=======
-    awsFsbp.node.addDependency(hub);
-    cisBenchmark.node.addDependency(hub);
-    pciDss.node.addDependency(hub);
-    
-    // Output the detector ID
-    new cdk.CfnOutput(this, 'GuardDutyDetectorId', {
-      value: detector.ref,
->>>>>>> origin/main
       description: 'GuardDuty Detector ID',
       exportName: 'GuardDutyDetectorId'
     });
@@ -491,11 +403,7 @@ export class SecurityMonitoringStack extends cdk.Stack {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-<<<<<<< HEAD
-                at 2025-03-29T01:58:04.841Z
-=======
-                at 2025-03-29T01:04:01.496Z
->>>>>>> origin/main
+                at 2025-03-29T03:51:51.213Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -153,6 +153,44 @@ npm install
    AWS_ORG_ID="o-xxxxxxxxxx"              # AWS Organizations ID
    ```
 
+### Utility Scripts
+
+The project includes utility scripts to help set up and manage AWS Organizations and accounts:
+
+#### Organization Setup
+
+The `scripts/create-organization.ts` script helps set up the initial AWS Organization structure:
+
+```bash
+npx ts-node scripts/create-organization.ts
+```
+
+This script:
+- Creates or retrieves an AWS Organization
+- Sets up Organizational Units (OUs):
+  - Security OU for security-related accounts
+  - Workloads OU for application workloads
+- Updates `.env` file with new organization IDs
+
+#### Account Creation
+
+The `scripts/create-account.ts` script creates new AWS accounts in the organization:
+
+```bash
+npx ts-node scripts/create-account.ts
+```
+
+Required environment variables:
+- `CDK_DEFAULT_ACCOUNT`: AWS account ID
+- `CDK_DEFAULT_REGION`: AWS region
+- `SYNAPSED_EMAIL`: Email address for the new account
+- `ENVIRONMENT`: Environment name (e.g., dev, prod)
+
+The script:
+- Creates a new AWS account with the specified configuration
+- Waits for account creation to complete
+- Provides status updates during the process
+
 ### Stack Configuration
 
 Each stack extends the `BaseStack` class and implements specific security and compliance requirements. The stacks are deployed in a specific order to ensure proper dependency management:
