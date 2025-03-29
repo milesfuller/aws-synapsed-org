@@ -17,5 +17,10 @@ module.exports = {
       statements: 80
     }
   },
-  setupFiles: ['<rootDir>/test/setup.ts']
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  globals: {
+    'ts-jest': {
+      isolatedModules: true
+    }
+  }
 };

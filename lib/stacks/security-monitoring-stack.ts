@@ -10,36 +10,49 @@ export class SecurityMonitoringStack extends cdk.Stack {
 
     // Enable GuardDuty
     const detector = new cdk.CfnResource(this, 'GuardDutyDetector', {
-        type: 'AWS::GuardDuty::Detector',
-        properties: {
-          Enable: true,
-          FindingPublishingFrequency: 'FIFTEEN_MINUTES',
-          DataSources: {
-            S3Logs: {
+      type: 'AWS::GuardDuty::Detector',
+      properties: {
+        Enable: true,
+        FindingPublishingFrequency: 'FIFTEEN_MINUTES',
+        DataSources: {
+          S3Logs: {
+            Enable: true
+          },
+          Kubernetes: {
+            AuditLogs: {
               Enable: true
-            },
-            Kubernetes: {
-              AuditLogs: {
+            }
+          },
+          MalwareProtection: {
+            ScanEc2InstanceWithFindings: {
+              EbsVolumes: {
                 Enable: true
-              }
-            },
-            MalwareProtection: {
-              ScanEc2InstanceWithFindings: {
-                EbsVolumes: {
-                  Enable: true
-                }
               }
             }
           }
         }
-      });
+      }
+    });
+
+    // Add tags to GuardDuty detector
+    cdk.Tags.of(detector).add('Environment', props?.tags?.Environment || 'Dev');
+    cdk.Tags.of(detector).add('Project', props?.tags?.Project || 'aws-synapsed-bootstrap');
+    cdk.Tags.of(detector).add('ManagedBy', 'CDK');
 
     // Enable Security Hub
     const hub = new securityhub.CfnHub(this, 'SecurityHub', {
       enableDefaultStandards: true
     });
 
-    // Enable specific standards using raw CloudFormation resources
+    // Add tags to Security Hub
+    cdk.Tags.of(hub).add('Environment', props?.tags?.Environment || 'Dev');
+    cdk.Tags.of(hub).add('Project', props?.tags?.Project || 'aws-synapsed-bootstrap');
+    cdk.Tags.of(hub).add('ManagedBy', 'CDK');
+
+    // Add explicit dependency
+    hub.addDependency(detector);
+
+    // Enable specific standards using Security Hub constructs
     // AWS Foundational Security Best Practices
     const awsFsbp = new cdk.CfnResource(this, 'AwsFsbpStandard', {
       type: 'AWS::SecurityHub::StandardsSubscription',
@@ -71,16 +84,15 @@ export class SecurityMonitoringStack extends cdk.Stack {
     });
 
     // Add dependencies
-    hub.node.addDependency(detector);
     awsFsbp.node.addDependency(hub);
     cisBenchmark.node.addDependency(hub);
     pciDss.node.addDependency(hub);
     
     // Output the detector ID
     new cdk.CfnOutput(this, 'GuardDutyDetectorId', {
-        value: detector.ref,
-        description: 'GuardDuty Detector ID',
-        exportName: 'GuardDutyDetectorId'
-      });
+      value: detector.ref,
+      description: 'GuardDuty Detector ID',
+      exportName: 'GuardDutyDetectorId'
+    });
   }
 }

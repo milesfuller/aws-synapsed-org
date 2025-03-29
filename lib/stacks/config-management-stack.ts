@@ -6,7 +6,7 @@ import * as kms from 'aws-cdk-lib/aws-kms';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { BaseStack, BaseStackProps } from '../interfaces/base-stack';
 
-interface ConfigManagementStackProps extends BaseStackProps {
+export interface ConfigManagementStackProps extends BaseStackProps {
   parameterPrefix?: string;
   secretPrefix?: string;
   applicationPrefix?: string;
@@ -15,180 +15,180 @@ interface ConfigManagementStackProps extends BaseStackProps {
 }
 
 export class ConfigManagementStack extends BaseStack {
-  public readonly encryptionKey?: kms.Key;
   public readonly parameterStore: ssm.StringParameter;
-  public readonly secretsManager: secretsmanager.Secret;
-  public readonly appConfig: appconfig.CfnApplication;
+  public readonly secret: secretsmanager.Secret;
+  public readonly appConfigApplication: appconfig.CfnApplication;
+  public readonly appConfigEnvironment: appconfig.CfnEnvironment;
+  public readonly appConfigProfile: appconfig.CfnConfigurationProfile;
+  public readonly appConfigVersion: appconfig.CfnHostedConfigurationVersion;
+  public readonly appConfigRole: iam.Role;
+  public readonly encryptionKey?: kms.Key;
 
   constructor(scope: cdk.App, id: string, props: ConfigManagementStackProps) {
     super(scope, id, props);
 
-    // Create KMS key for encryption if enabled
-    if (props.enableKmsEncryption !== false) {
-      this.encryptionKey = new kms.Key(this, 'ConfigEncryptionKey', {
-        alias: this.createResourceName('config-encryption'),
-        description: 'KMS key for configuration encryption',
+    // Create KMS key if encryption is enabled
+    if (props.enableKmsEncryption) {
+      this.encryptionKey = new kms.Key(this, 'EncryptionKey', {
         enableKeyRotation: true,
+        pendingWindow: cdk.Duration.days(props.retentionDays || 30),
+        description: 'KMS key for configuration encryption',
+        alias: this.createResourceName('config-key'),
         removalPolicy: cdk.RemovalPolicy.RETAIN,
-        pendingWindow: cdk.Duration.days(7),
       });
     }
 
     // Create Parameter Store parameter
+    const parameterName = props.parameterPrefix 
+      ? `${props.parameterPrefix}/${this.createResourceName('config')}`
+      : this.createResourceName('config');
+    
     this.parameterStore = new ssm.StringParameter(this, 'ConfigParameter', {
-      parameterName: this.createResourceName(props.parameterPrefix || 'config'),
+      parameterName,
       stringValue: 'Default configuration value',
       description: 'Central configuration parameter',
+      tier: ssm.ParameterTier.STANDARD,
     });
 
     // Create Secrets Manager secret
-    this.secretsManager = new secretsmanager.Secret(this, 'ConfigSecret', {
-      secretName: this.createResourceName(props.secretPrefix || 'config'),
+    const secretName = props.secretPrefix 
+      ? `${props.secretPrefix}/${this.createResourceName('config')}`
+      : this.createResourceName('config');
+    
+    this.secret = new secretsmanager.Secret(this, 'ConfigSecret', {
+      secretName,
       description: 'Central configuration secret',
       generateSecretString: {
         generateStringKey: 'password',
         secretStringTemplate: JSON.stringify({ username: 'admin' }),
         excludePunctuation: true,
         passwordLength: 16,
-        includeSpace: false,
         excludeCharacters: ' %+~`#$&*()|[]{}:;<>?!\'/,"\\',
       },
       removalPolicy: cdk.RemovalPolicy.RETAIN,
+      encryptionKey: this.encryptionKey,
     });
 
     // Create AppConfig application
-    this.appConfig = new appconfig.CfnApplication(this, 'ConfigApplication', {
-      name: this.createResourceName(props.applicationPrefix || 'config'),
+    const appName = props.applicationPrefix 
+      ? `${props.applicationPrefix}-${this.createResourceName('config')}`
+      : this.createResourceName('config');
+    
+    this.appConfigApplication = new appconfig.CfnApplication(this, 'ConfigApplication', {
+      name: appName,
       description: 'Central configuration application',
     });
 
     // Create AppConfig environment
-    const environment = new appconfig.CfnEnvironment(this, 'ConfigEnvironment', {
-      applicationId: this.appConfig.ref,
+    this.appConfigEnvironment = new appconfig.CfnEnvironment(this, 'ConfigEnvironment', {
       name: this.createResourceName('config-env'),
-      description: 'Configuration environment',
+      description: 'Central configuration environment',
+      applicationId: this.appConfigApplication.ref,
     });
 
     // Create AppConfig configuration profile
-    const profile = new appconfig.CfnConfigurationProfile(this, 'ConfigProfile', {
-      applicationId: this.appConfig.ref,
+    this.appConfigProfile = new appconfig.CfnConfigurationProfile(this, 'ConfigProfile', {
       name: this.createResourceName('config-profile'),
+      description: 'Central configuration profile',
       locationUri: 'hosted',
       type: 'AWS.Freeform',
-      validators: [
-        {
-          type: 'JSON_SCHEMA',
-          content: JSON.stringify({
-            type: 'object',
-            properties: {
-              version: { type: 'string' },
-              settings: { type: 'object' },
-            },
-            required: ['version', 'settings'],
-          }),
-        },
-      ],
+      applicationId: this.appConfigApplication.ref,
+      validators: [{
+        type: 'JSON_SCHEMA',
+        content: JSON.stringify({
+          type: 'object',
+          properties: {
+            version: { type: 'string' },
+            settings: { type: 'object' }
+          },
+          required: ['version', 'settings']
+        })
+      }]
     });
 
     // Create AppConfig hosted configuration version
-    new appconfig.CfnHostedConfigurationVersion(this, 'ConfigVersion', {
-      applicationId: this.appConfig.ref,
-      configurationProfileId: profile.ref,
-      content: JSON.stringify({
-        version: '1.0',
-        settings: {
-          featureFlags: {
-            enabled: true,
-            features: {
-              newFeature: {
-                enabled: false,
-                description: 'New feature flag',
-              },
-            },
-          },
-        },
-      }),
+    this.appConfigVersion = new appconfig.CfnHostedConfigurationVersion(this, 'ConfigVersion', {
+      applicationId: this.appConfigApplication.ref,
+      configurationProfileId: this.appConfigProfile.ref,
       contentType: 'application/json',
       description: 'Initial configuration version',
-      latestVersionNumber: 1,
+      content: JSON.stringify({
+        version: '1.0.0',
+        config: {
+          key: 'value'
+        }
+      })
     });
 
-    // Create IAM role for AppConfig
-    const appConfigRole = new iam.Role(this, 'AppConfigRole', {
+    // Create AppConfig IAM role
+    this.appConfigRole = new iam.Role(this, 'AppConfigRole', {
       roleName: this.createResourceName('appconfig-role'),
       assumedBy: new iam.ServicePrincipal('appconfig.amazonaws.com'),
-      description: 'Role for AppConfig to access resources',
+      description: 'IAM role for AppConfig',
+      inlinePolicies: {
+        'AppConfigAccess': new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                'appconfig:GetConfiguration',
+                'appconfig:GetConfigurationProfile',
+                'appconfig:GetEnvironment',
+                'appconfig:ListApplications',
+                'appconfig:ListConfigurationProfiles',
+                'appconfig:ListEnvironments',
+                'appconfig:ListHostedConfigurationVersions',
+                'appconfig:StartDeployment',
+                'appconfig:StopDeployment'
+              ],
+              resources: ['*']
+            })
+          ]
+        })
+      }
     });
 
-    // Add required permissions for AppConfig
-    appConfigRole.addToPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'appconfig:GetApplication',
-        'appconfig:GetConfiguration',
-        'appconfig:GetConfigurationProfile',
-        'appconfig:GetEnvironment',
-        'appconfig:GetHostedConfigurationVersion',
-        'appconfig:ListApplications',
-        'appconfig:ListConfigurationProfiles',
-        'appconfig:ListEnvironments',
-        'appconfig:ListHostedConfigurationVersions',
-        'appconfig:ListTagsForResource',
-        'appconfig:StartDeployment',
-        'appconfig:StopDeployment',
-        'appconfig:TagResource',
-        'appconfig:UntagResource',
-        'appconfig:UpdateApplication',
-        'appconfig:UpdateConfigurationProfile',
-        'appconfig:UpdateEnvironment',
-        'appconfig:ValidateConfiguration',
-      ],
-      resources: ['*'],
-    }));
-
-    // Output important values
+    // Create outputs
     new cdk.CfnOutput(this, 'ParameterStoreName', {
       value: this.parameterStore.parameterName,
-      description: 'Name of the Parameter Store parameter',
-      exportName: this.createExportName('ParameterStoreName'),
+      description: 'Parameter Store parameter name',
     });
 
     new cdk.CfnOutput(this, 'SecretsManagerArn', {
-      value: this.secretsManager.secretArn,
-      description: 'ARN of the Secrets Manager secret',
-      exportName: this.createExportName('SecretsManagerArn'),
+      value: this.secret.secretArn,
+      description: 'Secrets Manager secret ARN',
     });
 
     new cdk.CfnOutput(this, 'AppConfigApplicationId', {
-      value: this.appConfig.ref,
-      description: 'ID of the AppConfig application',
-      exportName: this.createExportName('AppConfigApplicationId'),
+      value: this.appConfigApplication.ref,
+      description: 'AppConfig application ID',
     });
 
     new cdk.CfnOutput(this, 'AppConfigEnvironmentId', {
-      value: environment.ref,
-      description: 'ID of the AppConfig environment',
-      exportName: this.createExportName('AppConfigEnvironmentId'),
+      value: this.appConfigEnvironment.ref,
+      description: 'AppConfig environment ID',
     });
 
-    new cdk.CfnOutput(this, 'AppConfigProfileId', {
-      value: profile.ref,
-      description: 'ID of the AppConfig configuration profile',
-      exportName: this.createExportName('AppConfigProfileId'),
+    new cdk.CfnOutput(this, 'AppConfigConfigurationProfileId', {
+      value: this.appConfigProfile.ref,
+      description: 'AppConfig configuration profile ID',
+    });
+
+    new cdk.CfnOutput(this, 'AppConfigHostedConfigurationVersionId', {
+      value: this.appConfigVersion.ref,
+      description: 'AppConfig hosted configuration version ID',
     });
 
     if (this.encryptionKey) {
       new cdk.CfnOutput(this, 'EncryptionKeyArn', {
         value: this.encryptionKey.keyArn,
-        description: 'ARN of the KMS key used for encryption',
-        exportName: this.createExportName('EncryptionKeyArn'),
+        description: 'KMS key ARN',
       });
     }
 
     new cdk.CfnOutput(this, 'AppConfigRoleArn', {
-      value: appConfigRole.roleArn,
-      description: 'ARN of the AppConfig IAM role',
-      exportName: this.createExportName('AppConfigRoleArn'),
+      value: this.appConfigRole.roleArn,
+      description: 'AppConfig IAM role ARN',
     });
   }
 } 

@@ -1,89 +1,69 @@
-// Mock AWS CDK constructs
-jest.mock('aws-cdk-lib', () => {
-  const actual = jest.requireActual('aws-cdk-lib');
-  return {
-    ...actual,
-    Stack: jest.fn().mockImplementation(function (scope, id, props) {
-      return actual.Stack.call(this, scope, id, props);
-    }),
-    CfnOutput: jest.fn().mockImplementation(function (scope, id, props) {
-      return actual.CfnOutput.call(this, scope, id, props);
-    }),
-    Tags: {
-      of: jest.fn().mockReturnValue({
-        add: jest.fn(),
-        tags: {}
-      })
+import { Template } from 'aws-cdk-lib/assertions';
+
+// Configure Jest to handle CDK synthesis
+jest.setTimeout(30000); // Increase timeout for synthesis
+
+// Add custom matchers for CDK assertions
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toHaveResourceType: (type: string) => R;
+      toHaveResourceProperties: (type: string, props: any) => R;
+      toHaveOutput: (name: string) => R;
+      resourceCountIs: (type: string, count: number) => R;
     }
-  };
-});
+  }
+}
 
-// Mock AWS CDK constructs
-jest.mock('aws-cdk-lib/aws-ssm', () => {
-  const actual = jest.requireActual('aws-cdk-lib/aws-ssm');
-  return {
-    ...actual,
-    StringParameter: jest.fn().mockImplementation(function (scope, id, props) {
-      return actual.StringParameter.call(this, scope, id, props);
-    })
-  };
-});
-
-jest.mock('aws-cdk-lib/aws-secretsmanager', () => {
-  const actual = jest.requireActual('aws-cdk-lib/aws-secretsmanager');
-  return {
-    ...actual,
-    Secret: jest.fn().mockImplementation(function (scope, id, props) {
-      return actual.Secret.call(this, scope, id, props);
-    })
-  };
-});
-
-jest.mock('aws-cdk-lib/aws-appconfig', () => {
-  const actual = jest.requireActual('aws-cdk-lib/aws-appconfig');
-  return {
-    ...actual,
-    CfnApplication: jest.fn().mockImplementation(function (scope, id, props) {
-      return actual.CfnApplication.call(this, scope, id, props);
-    }),
-    CfnEnvironment: jest.fn().mockImplementation(function (scope, id, props) {
-      return actual.CfnEnvironment.call(this, scope, id, props);
-    }),
-    CfnConfigurationProfile: jest.fn().mockImplementation(function (scope, id, props) {
-      return actual.CfnConfigurationProfile.call(this, scope, id, props);
-    }),
-    CfnHostedConfigurationVersion: jest.fn().mockImplementation(function (scope, id, props) {
-      return actual.CfnHostedConfigurationVersion.call(this, scope, id, props);
-    })
-  };
-});
-
-jest.mock('aws-cdk-lib/aws-kms', () => {
-  const actual = jest.requireActual('aws-cdk-lib/aws-kms');
-  return {
-    ...actual,
-    Key: jest.fn().mockImplementation(function (scope, id, props) {
-      return actual.Key.call(this, scope, id, props);
-    })
-  };
-});
-
-jest.mock('aws-cdk-lib/aws-iam', () => {
-  const actual = jest.requireActual('aws-cdk-lib/aws-iam');
-  return {
-    ...actual,
-    Role: jest.fn().mockImplementation(function (scope, id, props) {
-      return actual.Role.call(this, scope, id, props);
-    }),
-    ServicePrincipal: jest.fn().mockImplementation(function (service) {
-      return actual.ServicePrincipal.call(this, service);
-    }),
-    PolicyStatement: jest.fn().mockImplementation(function (props) {
-      return actual.PolicyStatement.call(this, props);
-    }),
-    Effect: {
-      ALLOW: 'Allow',
-      DENY: 'Deny'
-    }
-  };
+expect.extend({
+  toHaveResourceType(received: Template, expected: string) {
+    const template = received.toJSON();
+    const resources = Object.values(template.Resources || {});
+    const hasResource = resources.some((resource: any) => resource.Type === expected);
+    
+    return {
+      message: () => `expected template to ${hasResource ? 'not ' : ''}have resource of type ${expected}`,
+      pass: hasResource
+    };
+  },
+  
+  toHaveResourceProperties(received: Template, type: string, props: any) {
+    const template = received.toJSON();
+    const resources = Object.values(template.Resources || {});
+    const hasResource = resources.some((resource: any) => {
+      if (resource.Type !== type) return false;
+      return Object.entries(props).every(([key, value]) => {
+        if (typeof value === 'object') {
+          return JSON.stringify(resource.Properties[key]) === JSON.stringify(value);
+        }
+        return resource.Properties[key] === value;
+      });
+    });
+    
+    return {
+      message: () => `expected template to ${hasResource ? 'not ' : ''}have resource of type ${type} with properties ${JSON.stringify(props)}`,
+      pass: hasResource
+    };
+  },
+  
+  toHaveOutput(received: Template, expected: string) {
+    const template = received.toJSON();
+    const hasOutput = expected in (template.Outputs || {});
+    
+    return {
+      message: () => `expected template to ${hasOutput ? 'not ' : ''}have output ${expected}`,
+      pass: hasOutput
+    };
+  },
+  
+  resourceCountIs(received: Template, type: string, expected: number) {
+    const template = received.toJSON();
+    const resources = Object.values(template.Resources || {});
+    const count = resources.filter((resource: any) => resource.Type === type).length;
+    
+    return {
+      message: () => `expected template to have ${expected} resources of type ${type}, but found ${count}`,
+      pass: count === expected
+    };
+  }
 }); 
