@@ -3,7 +3,12 @@ import { get } from 'env-var';
 
 // Mock env-var
 jest.mock('env-var', () => ({
-  get: jest.fn()
+  get: jest.fn().mockImplementation((key: string) => ({
+    required: function() { return this; },
+    default: function() { return this; },
+    asString: jest.fn(),
+    asInt: jest.fn()
+  }))
 }));
 
 describe('Environment Configuration', () => {

@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Local development template for Synapsed APIs
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs18.x
+    Environment:
+      Variables:
+        NODE_ENV: development
+        DYNAMODB_TABLE: users-dev
+        USER_POOL_ID: local
+        USER_POOL_CLIENT_ID: local
+        DYNAMODB_ENDPOINT: http://localhost:8000
+        AWS_ACCESS_KEY_ID: dummy
+        AWS_SECRET_ACCESS_KEY: dummy
+        AWS_DEFAULT_REGION: us-east-1
+Resources:
+  NotesApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: notes-api-dev
+      Handler: src/notes-api/index.handler
+      CodeUri: NotesApiFunction
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /notes/test
+            Method: get
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: users-dev
+    Metadata:
+      SamResourceId: NotesApiFunction
+  BudgetApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: budget-api-dev
+      Handler: src/budget-api/index.handler
+      CodeUri: BudgetApiFunction
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /test
+            Method: get
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: budgets-dev
+    Metadata:
+      SamResourceId: BudgetApiFunction
+Outputs:
+  NotesApiEndpoint:
+    Description: API Gateway endpoint URL for Notes API
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/notes/test
+  BudgetApiEndpoint:
+    Description: API Gateway endpoint URL for Budget API
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/test

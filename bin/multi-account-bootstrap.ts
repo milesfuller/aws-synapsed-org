@@ -7,6 +7,7 @@ import { IncidentResponseStack } from '../lib/stacks/incident-response-stack';
 import { AlertingStack } from '../lib/stacks/alerting-stack';
 import { SecurityMonitoringStack } from '../lib/stacks/security-monitoring-stack';
 import { ConfigManagementStack } from '../lib/stacks/config-management-stack';
+import { WebAppStack } from '../lib/stacks/web-app-stack';
 import { getEnvironmentConfig } from '../lib/config/environment';
 
 /**
@@ -21,6 +22,7 @@ import { getEnvironmentConfig } from '../lib/config/environment';
  * 5. Compliance (AWS Config rules)
  * 6. Incident Response (Automated responses)
  * 7. Alerting (SNS notifications)
+ * 8. Web Application (Landing page and Notes app)
  */
 
 // Load environment variables
@@ -87,6 +89,16 @@ const alertingStack = new AlertingStack(app, `${env.stackPrefix}AlertingStack`, 
   ...stackProps
 });
 
+// Deploy Web Application Stack
+const webAppStack = new WebAppStack(app, `${env.stackPrefix}WebAppStack`, {
+  description: 'Web applications infrastructure for landing page and notes app',
+  domainName: 'synapsed.me',
+  notesSubdomain: 'notes',
+  budgetSubdomain: 'budget',
+  securityTeamEmail: env.securityTeamEmail,
+  ...stackProps
+});
+
 // Add explicit dependencies
 securityStack.addDependency(configStack);
 loggingStack.addDependency(securityStack);
@@ -94,5 +106,6 @@ securityMonitoringStack.addDependency(loggingStack);
 complianceStack.addDependency(securityMonitoringStack);
 incidentResponseStack.addDependency(complianceStack);
 alertingStack.addDependency(incidentResponseStack);
+webAppStack.addDependency(alertingStack);
 
 app.synth();

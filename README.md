@@ -10,6 +10,7 @@ SynapseD is a startup developing a secure notes application with these key featu
 - Local-first architecture: Data primarily stored on user devices
 - Peer-to-peer (P2P) communication: Direct encrypted sharing between users
 - End-to-end encryption: Ensures data privacy and security
+- Real-time WebSocket communication: Enables instant message delivery and presence detection
 
 While SynapseD's initial infrastructure needs are modest, this framework implements enterprise-grade AWS account structure and security controls. This forward-thinking approach allows:
 - Seamless scaling as the user base grows
@@ -42,6 +43,7 @@ graph TD
     Monitoring --> Compliance[Compliance Stack]
     Compliance --> Incident[Incident Response]
     Incident --> Alerting[Alerting Stack]
+    Alerting --> WebApp[Web Application Stack]
 ```
 
 ## Implementation Components
@@ -98,158 +100,118 @@ graph TD
 ### 6. Security Alerting
 - **SNS Topics**:
   - Critical Security Alerts
+  - High Severity Findings
   - Compliance Violations
-  - Audit Events
-- **Multiple Notification Methods**:
-  - Email notifications (required)
-  - SMS alerts (optional)
-  - Configurable severity thresholds
-  - High severity threshold customization
+- **Email Notifications**: Configurable recipients
+- **SMS Alerts**: Optional phone number integration
 
-## Prerequisites
+### 7. Web Application Infrastructure
+- **WebSocket API**:
+  - Real-time communication
+  - Connection management
+  - Message routing
+  - Redis-based state management
+- **Landing Page**:
+  - S3 static hosting
+  - CloudFront distribution
+  - WAF protection
+- **Notes Application**:
+  - API Gateway endpoints
+  - Lambda functions
+  - DynamoDB tables
+  - WebSocket support
 
-1. **System Requirements**
-   - Node.js (v14 or later)
-   - npm (v7 or later)
-   - AWS CLI v2
+## Recent Improvements
 
-2. **AWS Setup**
+### AWS SDK Migration
+- Migrated from AWS SDK v2 to v3 for improved performance and modern features
+- Updated DynamoDB client implementation
+- Enhanced error handling and type safety
+
+### Testing Infrastructure
+- Improved test coverage (97.05% statements, 90.36% branches)
+- Enhanced WebSocket testing with proper mocking
+- Updated Jest configuration for better TypeScript support
+- Added comprehensive error handling tests
+
+### Code Quality
+- Enhanced type safety with strict TypeScript checks
+- Improved error handling with proper error types
+- Better logging with structured error messages
+- Cleaner code organization and modularity
+
+## Getting Started
+
+1. Clone the repository:
    ```bash
-   npm install -g aws-cdk
-   aws configure
+   git clone https://github.com/your-org/aws-synapsed-bootstrap.git
+   cd aws-synapsed-bootstrap
    ```
 
-3. **Required Permissions**
-   - Organizations Admin
-   - IAM Admin
-   - Security Services Access
-
-## Installation
-
-```bash
-git clone <repository-url>
-cd multi-account-bootstrap
-npm install
-```
-
-## Configuration
-
-### Environment Variables
-
-1. **Required Environment Variables**
-   ```plaintext
-   CDK_DEFAULT_ACCOUNT=<root-account-id>    # Your AWS root account ID
-   CDK_DEFAULT_REGION=<preferred-region>    # e.g., ap-southeast-2
-   SECURITY_TEAM_EMAIL=<email>              # Email for security alerts
+2. Install dependencies:
+   ```bash
+   npm install
    ```
 
-2. **Optional Environment Variables**
-   ```plaintext
-   STACK_PREFIX="Security"                  # Prefix for all stack names
-   ENV_NAME="Dev"                          # Environment name (Dev, Prod, etc.)
-   PROJECT_NAME="aws-synapsed-bootstrap"    # Project identifier
-   SECURITY_TEAM_PHONE="+1234567890"       # Phone number for SMS alerts
-   HIGH_SEVERITY_THRESHOLD="7"             # Threshold for high severity alerts
-   AWS_ORG_ID="o-xxxxxxxxxx"              # AWS Organizations ID
+3. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
    ```
 
-### Utility Scripts
+4. Run tests:
+   ```bash
+   npm test
+   ```
 
-The project includes utility scripts to help set up and manage AWS Organizations and accounts:
-
-#### Organization Setup
-
-The `scripts/create-organization.ts` script helps set up the initial AWS Organization structure:
-
-```bash
-npx ts-node scripts/create-organization.ts
-```
-
-This script:
-- Creates or retrieves an AWS Organization
-- Sets up Organizational Units (OUs):
-  - Security OU for security-related accounts
-  - Workloads OU for application workloads
-- Updates `.env` file with new organization IDs
-
-#### Account Creation
-
-The `scripts/create-account.ts` script creates new AWS accounts in the organization:
-
-```bash
-npx ts-node scripts/create-account.ts
-```
-
-Required environment variables:
-- `CDK_DEFAULT_ACCOUNT`: AWS account ID
-- `CDK_DEFAULT_REGION`: AWS region
-- `SYNAPSED_EMAIL`: Email address for the new account
-- `ENVIRONMENT`: Environment name (e.g., dev, prod)
-
-The script:
-- Creates a new AWS account with the specified configuration
-- Waits for account creation to complete
-- Provides status updates during the process
-
-### Stack Configuration
-
-Each stack extends the `BaseStack` class and implements specific security and compliance requirements. The stacks are deployed in a specific order to ensure proper dependency management:
-
-1. **Config Management Stack**
-   - First to deploy
-   - Sets up central configuration
-   - No dependencies
-
-2. **Security Stack**
-   - Depends on Config Management
-   - Sets up IAM roles and permissions
-   - Organization-wide scope
-
-3. **Logging Stack**
-   - Depends on Security Stack
-   - Centralized logging infrastructure
-   - S3 and CloudWatch Logs setup
-
-4. **Security Monitoring Stack**
-   - Depends on Logging Stack
-   - GuardDuty and Security Hub setup
-   - Cross-account monitoring
-
-5. **Compliance Stack**
-   - Depends on Security Monitoring
-   - AWS Config rules
-   - Compliance enforcement
-
-6. **Incident Response Stack**
-   - Depends on Compliance Stack
-   - Automated response setup
-   - EventBridge rules
-
-7. **Alerting Stack**
-   - Depends on Incident Response
-   - SNS topics and subscriptions
-   - Notification configuration
+5. Deploy the stacks:
+   ```bash
+   npm run deploy
+   ```
 
 ## Development
 
+### Prerequisites
+- Node.js 18.x or later
+- AWS CLI configured with appropriate credentials
+- TypeScript 5.x
+- Jest for testing
+
 ### Testing
 ```bash
+# Run all tests
 npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run specific test file
+npm test -- test/websocket/index.test.ts
 ```
 
-### Deployment
+### Building
 ```bash
-cdk deploy --all
+# Build the project
+npm run build
+
+# Clean build artifacts
+npm run clean
 ```
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- AWS CDK team for the excellent infrastructure as code framework
+- SynapseD team for the original use case and requirements
+- All contributors who have helped improve this framework

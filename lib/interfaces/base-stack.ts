@@ -1,4 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
+import { Construct } from 'constructs';
 
 export interface BaseStackProps extends cdk.StackProps {
   environment: string;
@@ -11,7 +12,7 @@ export class BaseStack extends cdk.Stack {
   protected readonly stackEnvironment: string;
   protected readonly stackProjectName: string;
 
-  constructor(scope: cdk.App, id: string, props: BaseStackProps) {
+  constructor(scope: Construct, id: string, props: BaseStackProps) {
     // Validate required props
     if (!props.environment) {
       throw new Error('Environment is required');

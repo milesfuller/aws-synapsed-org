@@ -66,4 +66,20 @@ expect.extend({
       pass: count === expected
     };
   }
+});
+
+// Set up environment variables for testing
+process.env.DYNAMODB_TABLE = 'test-did-table';
+process.env.REDIS_URL = 'redis://localhost:6379';
+process.env.LOG_LEVEL = 'error';
+
+// Mock console methods to reduce noise during tests
+console.log = jest.fn();
+console.error = jest.fn();
+console.warn = jest.fn();
+console.info = jest.fn();
+
+// Reset all mocks before each test
+beforeEach(() => {
+  jest.clearAllMocks();
 }); 

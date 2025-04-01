@@ -140,4 +140,256 @@ const stackProps = {
 };
 ```
 
-This ensures consistent naming and tagging across all resources in the multi-account setup. 
+This ensures consistent naming and tagging across all resources in the multi-account setup.
+
+## Core Aspects
+
+### 1. Security Aspect
+
+The security aspect ensures secure communication and data handling:
+
+```typescript
+// Example security aspect
+@Aspect()
+class SecurityAspect {
+  @Before('execution(* *.*(..))')
+  async validateSecurity(context: ExecutionContext): Promise<void> {
+    const request = context.getRequest();
+    if (!request.headers.authorization) {
+      throw new UnauthorizedException('Missing authorization header');
+    }
+    await this.validateToken(request.headers.authorization);
+  }
+
+  @After('execution(* *.*(..))')
+  async auditLog(context: ExecutionContext): Promise<void> {
+    const request = context.getRequest();
+    await this.logger.info('Request processed', {
+      method: request.method,
+      path: request.path,
+      user: request.user,
+      timestamp: new Date()
+    });
+  }
+}
+```
+
+### 2. WebSocket Aspect
+
+The WebSocket aspect handles real-time communication:
+
+```typescript
+// Example WebSocket aspect
+@Aspect()
+class WebSocketAspect {
+  @Before('execution(* *.*(..))')
+  async validateConnection(context: ExecutionContext): Promise<void> {
+    const connection = context.getConnection();
+    if (!connection.isAuthenticated()) {
+      throw new UnauthorizedException('Invalid connection');
+    }
+    await this.validateRateLimit(connection);
+  }
+
+  @After('execution(* *.*(..))')
+  async trackMetrics(context: ExecutionContext): Promise<void> {
+    const message = context.getMessage();
+    await this.metrics.recordMessage(message);
+  }
+}
+```
+
+### 3. Logging Aspect
+
+The logging aspect provides comprehensive logging:
+
+```typescript
+// Example logging aspect
+@Aspect()
+class LoggingAspect {
+  @Before('execution(* *.*(..))')
+  async logRequest(context: ExecutionContext): Promise<void> {
+    const request = context.getRequest();
+    await this.logger.info('Request received', {
+      method: request.method,
+      path: request.path,
+      headers: request.headers,
+      timestamp: new Date()
+    });
+  }
+
+  @After('execution(* *.*(..))')
+  async logResponse(context: ExecutionContext): Promise<void> {
+    const response = context.getResponse();
+    await this.logger.info('Response sent', {
+      status: response.status,
+      headers: response.headers,
+      timestamp: new Date()
+    });
+  }
+}
+```
+
+## Implementation Details
+
+### 1. Security Implementation
+
+```typescript
+// Example security implementation
+class SecurityManager {
+  constructor(private jwtService: JWTService) {}
+
+  async validateToken(token: string): Promise<void> {
+    try {
+      const payload = await this.jwtService.verify(token);
+      if (!payload.isValid) {
+        throw new UnauthorizedException('Invalid token');
+      }
+    } catch (error) {
+      throw new UnauthorizedException('Token validation failed');
+    }
+  }
+
+  async generateToken(payload: any): Promise<string> {
+    return this.jwtService.sign(payload);
+  }
+}
+```
+
+### 2. WebSocket Implementation
+
+```typescript
+// Example WebSocket implementation
+class WebSocketManager {
+  constructor(private redis: Redis) {}
+
+  async validateConnection(connection: WebSocket): Promise<void> {
+    const rateLimit = await this.redis.get(`rate:${connection.id}`);
+    if (rateLimit && parseInt(rateLimit) > 100) {
+      throw new RateLimitException('Rate limit exceeded');
+    }
+  }
+
+  async trackMetrics(message: WebSocketMessage): Promise<void> {
+    await this.redis.incr(`metrics:${message.type}`);
+  }
+}
+```
+
+### 3. Logging Implementation
+
+```typescript
+// Example logging implementation
+class LoggingManager {
+  constructor(private logger: Logger) {}
+
+  async logRequest(request: Request): Promise<void> {
+    await this.logger.info('Request received', {
+      method: request.method,
+      path: request.path,
+      headers: request.headers,
+      timestamp: new Date()
+    });
+  }
+
+  async logResponse(response: Response): Promise<void> {
+    await this.logger.info('Response sent', {
+      status: response.status,
+      headers: response.headers,
+      timestamp: new Date()
+    });
+  }
+}
+```
+
+## Recent Improvements
+
+### 1. AWS SDK v3 Migration
+
+- Updated AWS service clients
+- Enhanced error handling
+- Improved type safety
+- Better performance
+
+### 2. Testing Infrastructure
+
+- Added aspect tests
+- Enhanced mocking
+- Improved coverage
+- Better organization
+
+### 3. Code Quality
+
+- Enhanced type safety
+- Improved error handling
+- Better logging
+- Cleaner code organization
+
+## Future Improvements
+
+### 1. Aspect Enhancement
+
+- Additional aspects
+- Better composition
+- Performance optimization
+- Enhanced monitoring
+
+### 2. Testing Enhancement
+
+- More test cases
+- Better coverage
+- Performance tests
+- Integration tests
+
+### 3. Monitoring Enhancement
+
+- Better metrics
+- Enhanced logging
+- Performance tracking
+- Resource monitoring
+
+## Best Practices
+
+### 1. Security
+
+- Token validation
+- Rate limiting
+- Access control
+- Audit logging
+
+### 2. WebSocket
+
+- Connection management
+- Message validation
+- Error handling
+- Performance monitoring
+
+### 3. Logging
+
+- Structured logging
+- Log levels
+- Log rotation
+- Log analysis
+
+## Support
+
+### 1. Troubleshooting
+
+- Common issues
+- Resolution steps
+- Log analysis
+- Performance tuning
+
+### 2. Documentation
+
+- Aspect guide
+- API reference
+- Examples
+- Best practices
+
+### 3. Training
+
+- Aspect overview
+- Implementation guide
+- Security practices
+- Maintenance procedures 

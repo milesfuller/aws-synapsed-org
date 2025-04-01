@@ -1,0 +1,12 @@
+version = 0.1
+[default]
+[default.local_start_api]
+[default.local_start_api.parameters]
+use_container = true
+docker_network = "aws-sam-local"
+container_env = "env.json"
+container_host = "localhost"
+container_host_interface = "127.0.0.1"
+debug = true
+skip_pull_image = true
+parameter_overrides = "ParameterKey=AWS_ACCESS_KEY_ID,ParameterValue=dummy ParameterKey=AWS_SECRET_ACCESS_KEY,ParameterValue=dummy ParameterKey=AWS_DEFAULT_REGION,ParameterValue=us-east-1" 
